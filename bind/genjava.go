@@ -316,11 +316,16 @@ func (g *JavaGen) genStruct(s structInfo) {
 			continue
 		}
 
+		annotation := ""
+		if strings.Contains(f.tag, "nonnull") {
+			annotation = "@Nonnull"
+		}
+
 		fdoc := doc.Member(f.Name())
 		g.javadoc(fdoc)
-		g.Printf("public final native %s get%s();\n", g.javaType(f.Type()), f.Name())
+		g.Printf("public final native %s %s get%s();\n", annotation, g.javaType(f.Type()), f.Name())
 		g.javadoc(fdoc)
-		g.Printf("public final native void set%s(%s v);\n\n", f.Name(), g.javaType(f.Type()))
+		g.Printf("public final native void set%s(%s %s v);\n\n", f.Name(), annotation, g.javaType(f.Type()))
 	}
 
 	var isStringer bool
@@ -480,7 +485,7 @@ func (g *JavaGen) genFuncArgs(f *types.Func, jm *java.Func, hasThis bool) {
 	}
 }
 
-func (g *JavaGen) genObjectMethods(n string, fields []*types.Var, isStringer bool) {
+func (g *JavaGen) genObjectMethods(n string, fields []*exportedField, isStringer bool) {
 	g.Printf("@Override public boolean equals(Object o) {\n")
 	g.Indent()
 	g.Printf("if (o == null || !(o instanceof %s)) {\n    return false;\n}\n", n)
@@ -1569,7 +1574,7 @@ func (g *JavaGen) GenC() error {
 			g.genJNIFunc(m, sName, jm, false, jinf != nil)
 		}
 		for _, f := range exportedFields(s.t) {
-			g.genJNIField(s.obj, f)
+			g.genJNIField(s.obj, &f.Var)
 		}
 	}
 	for _, iface := range g.interfaces {
@@ -1707,6 +1712,7 @@ const (
 package %[1]s;
 
 import go.Seq;
+import javax.annotation.Nonnull;
 
 `
 	cPreamble = gobindPreamble + `// JNI functions for the Go <=> Java bridge.

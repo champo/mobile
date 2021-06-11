@@ -91,14 +91,23 @@ func exportedMethodSet(T types.Type) []*types.Func {
 	return methods
 }
 
-func exportedFields(T *types.Struct) []*types.Var {
-	var fields []*types.Var
+type exportedField struct {
+	types.Var
+	tag string
+}
+
+func exportedFields(T *types.Struct) []*exportedField {
+	var fields []*exportedField
 	for i := 0; i < T.NumFields(); i++ {
 		f := T.Field(i)
 		if !f.Exported() {
 			continue
 		}
-		fields = append(fields, f)
+		if len(T.Tag(i)) > 0 {
+			println(f.Name())
+			println(T.Tag(i))
+		}
+		fields = append(fields, &exportedField{*f, T.Tag(i)})
 	}
 	return fields
 }

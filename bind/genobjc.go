@@ -1124,8 +1124,12 @@ func (g *ObjcGen) genStructH(obj *types.TypeName, t *types.Struct) {
 		name, typ := f.Name(), g.objcType(f.Type())
 		g.objcdoc(doc.Member(f.Name()))
 
+		annotation := "nonatomic"
+		if strings.Contains(f.tag, "nonnull") {
+			annotation += ", nonnull"
+		}
 		// properties are atomic by default so explicitly say otherwise
-		g.Printf("@property (nonatomic) %s %s;\n", typ, objcNameReplacer(lowerFirst(name)))
+		g.Printf("@property (%s) %s %s;\n", annotation, typ, objcNameReplacer(lowerFirst(name)))
 	}
 
 	// exported methods
@@ -1192,8 +1196,8 @@ func (g *ObjcGen) genStructM(obj *types.TypeName, t *types.Struct) {
 			g.Printf("// skipped unsupported field %s with type %s\n\n", f.Name(), f.Type())
 			continue
 		}
-		g.genGetter(obj.Name(), f)
-		g.genSetter(obj.Name(), f)
+		g.genGetter(obj.Name(), &f.Var)
+		g.genSetter(obj.Name(), &f.Var)
 	}
 
 	for _, m := range methods {
